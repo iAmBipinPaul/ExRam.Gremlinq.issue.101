@@ -53,8 +53,8 @@ namespace ExRam.Gremlinq.Samples
                         .ConfigureProperties(model => model
                             .ConfigureElement<Vertex>(conf => conf
                                 .IgnoreOnUpdate(x => x.PartitionKey))))
-                   //Disable query logging for a noise free console output.
-                   //Enable logging by setting the verbosity to anything but None.
+                    //Disable query logging for a noise free console output.
+                    //Enable logging by setting the verbosity to anything but None.
                     .ConfigureOptions(options => options
                         .SetValue(WebSocketGremlinqOptions.QueryLogLogLevel, LogLevel.None))
 
@@ -131,11 +131,11 @@ namespace ExRam.Gremlinq.Samples
 
             Console.WriteLine("\nWho does mark know =>");
 
-            var whoDoesMarkKnow = await _g 
+            var whoDoesMarkKnow = await _g
                 .V<Person>(_marko.Id)
                 .Both<Knows>()
                 .OfType<Person>();
-          
+
 
             foreach (var value in whoDoesMarkKnow)
             {
@@ -143,7 +143,7 @@ namespace ExRam.Gremlinq.Samples
             }
 
             Console.WriteLine("\nWho does mark know  from nearby Zip Code=>");
-            
+
             var marksFriendsThatBelongToNearByZipCode
                 = await _g
                 .Inject(nearByZipCodes)
@@ -160,20 +160,23 @@ namespace ExRam.Gremlinq.Samples
             }
 
             Console.WriteLine($"\nAll the person that mark does not know from Nearby Zip Code =>");
-            
-            //This method query is throwing exception, It should return Peter
+
+
             var personWhoMarkDoesNotKnowAndBelongsToNearbyZipCode = await _g
                 .Inject(nearByZipCodes)
                 .Fold()
                 .As((_, injectedNearByZipCode) => _
-                    .V<Person>(_marko.Id)
-                    .Both<Knows>() 
-                    .OfType<Person>()
-                    .Fold()
+                    .Map(__ => __
+                        .V<Person>(_marko.Id)
+                        .Both<Knows>()
+                        .OfType<Person>()
+                        .Fold())
                     .As((__, knownPeople) => __
-                        .V<Person>().Where(c =>
-                            !knownPeople.Value.Contains(c) && injectedNearByZipCode.Value.Contains(c.ZipCode)))
-                );
+                        .V<Person>()
+                        .Where(c => !knownPeople.Value.Contains(c) && c.Id != _marko.Id &&
+                                    injectedNearByZipCode.Value.Contains(c.ZipCode))));
+
+
 
             foreach (var value in personWhoMarkDoesNotKnowAndBelongsToNearbyZipCode)
             {
